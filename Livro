@@ -1,0 +1,202 @@
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+class Livro {
+    private int id;
+    private String titulo;
+    private String autor;
+
+    public Livro(int id, String titulo, String autor) {
+        this.id = id;
+        this.titulo = titulo;
+        this.autor = autor;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
+
+    public String getAutor() {
+        return autor;
+    }
+
+    public void setAutor(String autor) {
+        this.autor = autor;
+    }
+
+    @Override
+    public String toString() {
+        return id + "," + titulo + "," + autor;
+    }
+
+    public static Livro fromString(String str) {
+        String[] parts = str.split(",");
+        return new Livro(Integer.parseInt(parts[0]), parts[1], parts[2]);
+    }
+}
+
+class LivroDAO {
+    private List<Livro> livros;
+    private static final String FILENAME = "livros.txt";
+
+    public LivroDAO() {
+        livros = new ArrayList<>();
+        loadFromFile();
+    }
+
+    public void addLivro(Livro livro) {
+        livros.add(livro);
+        saveToFile();
+    }
+
+    public List<Livro> getAllLivros() {
+        return livros;
+    }
+
+    public Livro getLivroById(int id) {
+        for (Livro livro : livros) {
+            if (livro.getId() == id) {
+                return livro;
+            }
+        }
+        return null;
+    }
+
+    public void updateLivro(Livro livro) {
+        Livro existing = getLivroById(livro.getId());
+        if (existing != null) {
+            existing.setTitulo(livro.getTitulo());
+            existing.setAutor(livro.getAutor());
+            saveToFile();
+        }
+    }
+
+    public void deleteLivro(int id) {
+        Livro livro = getLivroById(id);
+        if (livro != null) {
+            livros.remove(livro);
+            saveToFile();
+        }
+    }
+
+    private void saveToFile() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME))) {
+            for (Livro livro : livros) {
+                writer.write(livro.toString());
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadFromFile() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILENAME))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                livros.add(Livro.fromString(line));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+public class Main {
+    private static final Scanner scanner = new Scanner(System.in);
+    private static final LivroDAO livroDAO = new LivroDAO();
+
+    public static void main(String[] args) {
+        while (true) {
+            System.out.println("Menu:");
+            System.out.println("1. Adicionar Livro");
+            System.out.println("2. Listar Livros");
+            System.out.println("3. Atualizar Livro");
+            System.out.println("4. Deletar Livro");
+            System.out.println("5. Sair");
+            System.out.print("Escolha uma opção: ");
+            int opcao = scanner.nextInt();
+            scanner.nextLine();  // Consume newline
+
+            switch (opcao) {
+                case 1:
+                    adicionarLivro();
+                    break;
+                case 2:
+                    listarLivros();
+                    break;
+                case 3:
+                    atualizarLivro();
+                    break;
+                case 4:
+                    deletarLivro();
+                    break;
+                case 5:
+                    System.exit(0);
+                default:
+                    System.out.println("Opção inválida.");
+            }
+        }
+    }
+
+    private static void adicionarLivro() {
+        System.out.print("ID: ");
+        int id = scanner.nextInt();
+        scanner.nextLine();  // Consume newline
+        System.out.print("Título: ");
+        String titulo = scanner.nextLine();
+        System.out.print("Autor: ");
+        String autor = scanner.nextLine();
+        Livro livro = new Livro(id, titulo, autor);
+        livroDAO.addLivro(livro);
+        System.out.println("Livro adicionado.");
+    }
+
+    private static void listarLivros() {
+        List<Livro> livros = livroDAO.getAllLivros();
+        if (livros.isEmpty()) {
+            System.out.println("Nenhum livro encontrado.");
+        } else {
+            for (Livro livro : livros) {
+                System.out.println(livro.getId() + " - " + livro.getTitulo() + " - " + livro.getAutor());
+            }
+        }
+    }
+
+    private static void atualizarLivro() {
+        System.out.print("ID do livro a ser atualizado: ");
+        int id = scanner.nextInt();
+        scanner.nextLine();  // Consume newline
+        Livro livro = livroDAO.getLivroById(id);
+        if (livro == null) {
+            System.out.println("Livro não encontrado.");
+            return;
+        }
+        System.out.print("Novo título: ");
+        String titulo = scanner.nextLine();
+        System.out.print("Novo autor: ");
+        String autor = scanner.nextLine();
+        livro.setTitulo(titulo);
+        livro.setAutor(autor);
+        livroDAO.updateLivro(livro);
+        System.out.println("Livro atualizado.");
+    }
+
+    private static void deletarLivro() {
+        System.out.print("ID do livro a ser deletado: ");
+        int id = scanner.nextInt();
+        scanner.nextLine();  // Consume newline
+        livroDAO.deleteLivro(id);
+        System.out.println("Livro deletado.");
+    }
+}
